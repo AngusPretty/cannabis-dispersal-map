@@ -9,6 +9,10 @@ import 'leaflet/dist/leaflet.css';
 import './App.css';
 
 const ALL_WORD_SETS = new Set(Object.keys(WORD_SET_META) as WordSet[]);
+const WORD_SET_KEYS = Object.keys(WORD_SET_META) as WordSet[];
+
+// Pre-sort points by dateStart for efficient filtering
+const sortedPoints = [...dispersalPoints].sort((a, b) => a.dateStart - b.dateStart);
 
 function App() {
   const [currentYear, setCurrentYear] = useState(-10000);
@@ -29,23 +33,24 @@ function App() {
     });
   }, []);
 
-  const pointCounts = useMemo(() => {
+  // Single pass: compute counts and visible total together
+  const { pointCounts, visibleCount } = useMemo(() => {
     const counts = {} as Record<WordSet, number>;
-    for (const ws of Object.keys(WORD_SET_META) as WordSet[]) {
-      counts[ws] = dispersalPoints.filter(
-        (p) => p.wordSet === ws && p.dateStart <= currentYear
-      ).length;
-    }
-    return counts;
-  }, [currentYear]);
+    for (const ws of WORD_SET_KEYS) counts[ws] = 0;
+    let visible = 0;
 
-  const visibleCount = useMemo(
-    () =>
-      dispersalPoints.filter(
-        (p) => p.dateStart <= currentYear && activeWordSets.has(p.wordSet)
-      ).length,
-    [currentYear, activeWordSets]
-  );
+    // sortedPoints is sorted by dateStart, so we can break early
+    for (const p of sortedPoints) {
+      if (p.dateStart > currentYear) break;
+      counts[p.wordSet]++;
+      if (activeWordSets.has(p.wordSet)) visible++;
+    }
+
+    return { pointCounts: counts, visibleCount: visible };
+  }, [currentYear, activeWordSets]);
+
+  // Stable callback ref to avoid re-creating on every render
+  const handleCloseDetail = useCallback(() => setSelectedPoint(null), []);
 
   return (
     <div className="app">
@@ -58,7 +63,7 @@ function App() {
 
       <div className="app-body">
         <MapView
-          points={dispersalPoints}
+          points={sortedPoints}
           routes={dispersalRoutes}
           currentYear={currentYear}
           activeWordSets={activeWordSets}
@@ -92,7 +97,7 @@ function App() {
         {selectedPoint && (
           <DetailPanel
             point={selectedPoint}
-            onClose={() => setSelectedPoint(null)}
+            onClose={handleCloseDetail}
           />
         )}
       </div>
