@@ -30,7 +30,7 @@ function getArrowHead(
   const len = Math.sqrt(dx * dx + dy * dy);
   if (len === 0) return [];
 
-  const size = Math.min(2.5, len * 0.15);
+  const size = Math.min(1.2, len * 0.08);
   const ux = dx / len;
   const uy = dy / len;
   // Perpendicular
@@ -83,7 +83,7 @@ const AnimatedRoute = memo(function AnimatedRoute({
       {arrowHead.length > 0 && (
         <Polyline
           positions={arrowHead}
-          pathOptions={{ color, weight: 2, opacity: 0.6, fill: false }}
+          pathOptions={{ color, weight: 1.5, opacity: 0.5, fill: false }}
         />
       )}
     </>
