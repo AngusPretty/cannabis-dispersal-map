@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 
 interface Props {
   currentYear: number;
@@ -30,7 +30,11 @@ export default function Timeline({
   const animRef = useRef<number>(0);
   const lastFrameRef = useRef<number>(0);
   const yearRef = useRef(currentYear);
-  yearRef.current = currentYear;
+  const animateRef = useRef<FrameRequestCallback | null>(null);
+
+  useLayoutEffect(() => {
+    yearRef.current = currentYear;
+  });
 
   const animate = useCallback(
     (timestamp: number) => {
@@ -48,10 +52,16 @@ export default function Timeline({
       }
 
       setCurrentYear(next);
-      animRef.current = requestAnimationFrame(animate);
+      if (animateRef.current) {
+        animRef.current = requestAnimationFrame(animateRef.current);
+      }
     },
     [setCurrentYear, setIsPlaying]
   );
+
+  useLayoutEffect(() => {
+    animateRef.current = animate;
+  });
 
   useEffect(() => {
     if (isPlaying) {
